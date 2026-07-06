@@ -1,0 +1,100 @@
+{% extends "layouts/app.html" %}
+{% block title %}API Key{% endblock %}
+
+{% block content %}
+<div class="p-6 lg:p-8 max-w-3xl mx-auto" x-data="{ copied: false, showKey: false, confirmRegen: false }">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">API Key</h1>
+        <p class="text-gray-500 text-sm mt-1">Tu clave para autenticar llamadas a la API de Metabridge</p>
+    </div>
+
+    {% for f in flashes %}
+    {% if f.category == 'api_key_new' %}
+    <div class="mb-6 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm">
+        ¡Tu nueva API Key es: <code class="font-mono font-semibold">{{ f.message.replace('api_key:', '') }}</code></br>
+        Guárdala en un lugar seguro, no se volverá a mostrar en claro.
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold text-gray-900">Tu API Key activa</h2>
+            <button @click="showKey = !showKey" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                <span x-show="!showKey">Mostrar</span>
+                <span x-show="showKey" x-cloak>Ocultar</span>
+            </button>
+        </div>
+
+        <div class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-center gap-3">
+            <code class="flex-1 text-sm font-mono text-gray-800 truncate">
+                <span x-show="!showKey">mb_live_••••••••••••••••••••••••••••••••</span>
+                <span x-show="showKey" x-cloak>{{ current_user.api_key }}</span>
+            </code>
+            <button @click="navigator.clipboard.writeText('{{ current_user.api_key }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                    class="shrink-0 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+                <span x-show="!copied">Copiar</span>
+                <span x-show="copied" x-cloak class="text-emerald-600">¡Copiado!</span>
+            </button>
+        </div>
+
+        <p class="text-xs text-gray-400 mt-2">
+            Úsala en el header <code class="bg-gray-100 px-1 rounded">X-API-Key</code> de cada request a la API.
+        </p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <h2 class="font-semibold text-gray-900 mb-4">Cómo usarla</h2>
+
+        <div class="space-y-4">
+            <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Enviar un mensaje</p>
+                <pre class="bg-gray-900 text-gray-100 text-xs font-mono rounded-lg p-4 overflow-x-auto"><code>curl -X POST {{ request.base_url }}api/v1/messages/send \
+  -H "X-API-Key: {{ current_user.api_key }}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": 1,
+    "to": "573001234567",
+    "type": "text",
+    "content": { "text": "Hola desde Metabridge" }
+  }'</code></pre>
+            </div>
+
+            <div>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Listar conversaciones</p>
+                <pre class="bg-gray-900 text-gray-100 text-xs font-mono rounded-lg p-4 overflow-x-auto"><code>curl {{ request.base_url }}api/v1/conversations \
+  -H "X-API-Key: {{ current_user.api_key }}"</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+        <h2 class="font-semibold text-amber-900 mb-2">Regenerar API Key</h2>
+        <p class="text-sm text-amber-800 mb-4">
+            Esto invalidará tu key actual. Cualquier integración que la use dejará de funcionar hasta que actualices la nueva key.
+        </p>
+
+        <div x-show="!confirmRegen">
+            <button @click="confirmRegen = true"
+                    class="text-sm bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+                Regenerar key
+            </button>
+        </div>
+
+        <div x-show="confirmRegen" x-cloak class="flex items-center gap-3">
+            <p class="text-sm font-medium text-amber-900">¿Estás seguro?</p>
+            <form method="POST" action="/settings/api-key/regenerate" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit"
+                        class="text-sm bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+                    Sí, regenerar
+                </button>
+            </form>
+            <button @click="confirmRegen = false" class="text-sm text-gray-600 hover:text-gray-800">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

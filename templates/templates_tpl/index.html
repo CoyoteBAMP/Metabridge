@@ -1,0 +1,187 @@
+{% extends "layouts/app.html" %}
+{% block title %}Plantillas{% endblock %}
+
+{% block content %}
+<div class="p-6 lg:p-8 max-w-4xl mx-auto"
+     x-data="{
+         showForm: {{ 'true' if errors else 'false' }},
+         editId: null,
+         editName: '',
+         editBody: '',
+         editCategory: 'general',
+         openEdit(id, name, body, category) {
+             this.editId = id;
+             this.editName = name;
+             this.editBody = body;
+             this.editCategory = category;
+         }
+     }">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Plantillas</h1>
+            <p class="text-gray-500 text-sm mt-1">Respuestas rápidas y mensajes predefinidos. Usa <code class="bg-gray-100 px-1 rounded text-xs">{{ '{{nombre}}' }}</code> para variables.</p>
+        </div>
+        <button @click="showForm = !showForm; editId = null"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            + Nueva plantilla
+        </button>
+    </div>
+
+    <div x-show="showForm && !editId" x-cloak class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <h2 class="font-semibold text-gray-900 mb-4">Nueva plantilla</h2>
+        <form method="POST" action="/templates" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la plantilla</label>
+                    <input type="text" name="name" value="{{ old.get('name', '') }}"
+                           placeholder="Ej: Bienvenida cliente" required
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                    <select name="category"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        {% for val, label in [('general', 'General'), ('saludo', 'Saludo'), ('pedido', 'Pedido / Orden'), ('soporte', 'Soporte')] %}
+                        <option value="{{ val }}" {{ 'selected' if old.get('category') == val else '' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+                <textarea name="body" rows="4" required
+                          placeholder="Ej: ¡Hola {{ '{{nombre}}' }}! Gracias por escribirnos. ¿En qué te podemos ayudar?"
+                          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old.get('body', '') }}</textarea>
+                <p class="text-xs text-gray-400 mt-1">
+                    Variables disponibles:
+                    <code class="bg-gray-100 px-1 rounded">{{ '{{nombre}}' }}</code>
+                    <code class="bg-gray-100 px-1 rounded">{{ '{{numero_pedido}}' }}</code>
+                    <code class="bg-gray-100 px-1 rounded">{{ '{{empresa}}' }}</code>
+                </p>
+            </div>
+
+            {% if errors %}
+            <div class="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {% for key, msg in errors.items() %}{{ msg }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors">
+                    Guardar plantilla
+                </button>
+                <button type="button" @click="showForm = false"
+                        class="text-gray-600 text-sm font-medium px-4 py-2.5">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <div x-show="editId !== null" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-lg p-6" @click.stop>
+            <h2 class="font-semibold text-gray-900 mb-4">Editar plantilla</h2>
+            <form method="POST" :action="`/templates/${editId}/update`" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" name="name" x-model="editName" required
+                               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                        <select name="category" x-model="editCategory"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <option value="general">General</option>
+                            <option value="saludo">Saludo</option>
+                            <option value="pedido">Pedido / Orden</option>
+                            <option value="soporte">Soporte</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
+                    <textarea name="body" rows="4" x-model="editBody" required
+                              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors">
+                        Guardar cambios
+                    </button>
+                    <button type="button" @click="editId = null"
+                            class="text-gray-600 text-sm font-medium px-4 py-2.5">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% set category_labels = {'saludo': 'Saludo', 'general': 'General', 'pedido': 'Pedido / Orden', 'soporte': 'Soporte'} %}
+    {% if not templates %}
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-16 text-center">
+        <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="text-gray-500">Aún no tienes plantillas.</p>
+        <p class="text-xs text-gray-400 mt-1">Crea respuestas rápidas para agilizar tu atención.</p>
+    </div>
+
+    <div class="mt-6 bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+        <p class="text-sm font-medium text-indigo-900 mb-3">Plantillas de ejemplo para empezar rápido:</p>
+        <div class="space-y-2 text-sm text-indigo-800">
+            <p><strong>Bienvenida:</strong> "¡Hola {{ '{{nombre}}' }}! Gracias por escribirnos. ¿En qué te podemos ayudar hoy?"</p>
+            <p><strong>Fuera de horario:</strong> "Hola, en este momento estamos fuera de horario (Lun-Sáb 9am-6pm). Te respondemos en cuanto abramos."</p>
+            <p><strong>Pedido confirmado:</strong> "¡Tu pedido #{{ '{{numero_pedido}}' }} está confirmado! Lo enviamos en 24-48h."</p>
+        </div>
+    </div>
+    {% else %}
+    {% set grouped = {} %}
+    {% for tpl in templates %}
+        {% if tpl.category not in grouped %}
+            {% set _ = grouped.update({tpl.category: []}) %}
+        {% endif %}
+        {% set _ = grouped[tpl.category].append(tpl) %}
+    {% endfor %}
+
+    {% for category, items in grouped.items() %}
+    <div class="mb-6">
+        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            {{ category_labels.get(category, category | capitalize) }}
+        </h3>
+        <div class="space-y-3">
+            {% for tpl in items %}
+            <div class="bg-white rounded-xl border border-gray-200 p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-gray-900">{{ tpl.name }}</p>
+                        <p class="text-sm text-gray-600 mt-1 whitespace-pre-line">{{ tpl.body }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button
+                            @click="openEdit({{ tpl.id }}, {{ tpl.name | tojson }}, {{ tpl.body | tojson }}, '{{ tpl.category }}')"
+                            class="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+                            Editar
+                        </button>
+                        <form method="POST" action="/templates/{{ tpl.id }}/delete"
+                              onsubmit="return confirm('¿Eliminar esta plantilla?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

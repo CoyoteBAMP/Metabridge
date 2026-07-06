@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-gray-50">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Dashboard{% endblock %} — Metabridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-full" x-data="{ sidebarOpen: false }">
+
+<div class="flex h-full">
+    <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-40 bg-black/50 lg:hidden" @click="sidebarOpen = false"></div>
+
+    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+           class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col transition-transform duration-200 lg:translate-x-0 lg:static lg:z-auto">
+
+        <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-700">
+            <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-sm">M</div>
+            <span class="font-semibold text-lg tracking-tight">Metabridge</span>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            {% set nav_items = [
+                {'path': '/dashboard',    'label': 'Dashboard',   'icon': 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'},
+                {'path': '/inbox',        'label': 'Inbox',       'icon': 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z'},
+                {'path': '/templates',    'label': 'Plantillas',  'icon': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'},
+                {'path': '/accounts',     'label': 'Cuentas',     'icon': 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'},
+                {'path': '/webhooks',     'label': 'Webhooks',    'icon': 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4'},
+                {'path': '/monitor',      'label': 'Monitor',     'icon': 'M9 17v1a3 3 0 006 0v-1m-9-4V9a6 6 0 0112 0v4l1.4 2.8a1 1 0 01-.9 1.2H4.5a1 1 0 01-.9-1.2L5 13z'},
+                {'path': '/settings/api-key', 'label': 'API Key', 'icon': 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'},
+                {'path': '/setup',        'label': 'Guía setup',  'icon': 'M13 10V3L4 14h7v7l9-11h-7z'},
+            ] %}
+            {% for item in nav_items %}
+                {% set active = request.url.path == item.path or request.url.path.startswith(item.path + '/') %}
+                <a href="{{ item.path }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                          {{ 'bg-indigo-600 text-white' if active else 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ item.icon }}"/>
+                    </svg>
+                    {{ item.label }}
+                </a>
+            {% endfor %}
+        </nav>
+
+        <div class="p-4 border-t border-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                    {{ current_user.name[0].upper() if current_user else 'U' }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-white truncate">{{ current_user.name if current_user else '' }}</p>
+                    <p class="text-xs text-gray-400 truncate">{{ current_user.email if current_user else '' }}</p>
+                </div>
+            </div>
+            <form method="POST" action="/logout">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="w-full text-left text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded">
+                    Cerrar sesión
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0 overflow-auto">
+        <div class="lg:hidden flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-3">
+            <button @click="sidebarOpen = true" class="text-gray-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <span class="font-semibold text-gray-900">Metabridge</span>
+        </div>
+
+        {% for f in flashes %}
+            {% if f.category == 'success' %}
+            <div class="mx-6 mt-4 px-4 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm">
+                {{ f.message }}
+            </div>
+            {% elif f.category == 'error' %}
+            <div class="mx-6 mt-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {{ f.message }}
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        <main class="flex-1">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+</body>
+</html>
